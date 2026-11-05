@@ -1,220 +1,172 @@
-# NewsOps × Switch — Developer Intelligence Engine (Revision 2)
+# NewsOps — Developer Intelligence Engine
 
-NewsOps is a full-stack, AI-powered developer intelligence and fact-checking platform built for the **Flip the Switch Hackathon (4–7 Nov 2026)**.
+NewsOps is a developer-intelligence and claim-verification platform built for technical ecosystems across GitHub, Hacker News, Reddit, and RSS feeds.
 
-NewsOps monitors technical ecosystems across GitHub, Hacker News, Reddit, and RSS feeds, automatically normalizes and deduplicates articles, extracts install commands and security advisories, performs rigorous claim extraction and evidence-backed verification ("The No Fake News Layer"), and prepares human-in-the-loop digests delivered via the **Switch Agent Protocol**.
+It normalizes and deduplicates articles, extracts verbatim install commands, isolates atomic factual claims, attaches strict trust badges, and coordinates human-in-the-loop digests delivered in partnership with the **Switch Agent Platform**.
 
 ---
 
-## 1. Complete Architecture
+## Architecture
 
-```
-newsops/
-├── ai/                           # AI & Verification Engine ("The No Fake News Layer")
-│   ├── analyst.py                # Narrative synthesis, claim verification & submission generator
-│   ├── claim_extractor.py        # Atomic verifiable claim extractor (VERSION, SECURITY, BENCHMARK...)
-│   ├── classifier.py             # Topic classification with confidence scoring
-│   ├── evidence_evaluator.py     # Multi-tier evidence evaluation & contradiction detection
-│   └── prompt_guard.py           # Prompt injection detection, sanitization & jailbreak shielding
-├── api/                          # FastAPI REST API Layer (NewsOps Revision 2 §9)
-│   ├── agent_analysis.py         # POST /api/v1/agent/stories/{id}/analysis (analyst submission)
-│   ├── deps.py                   # Identity & chat-handle dependency resolution
-│   ├── digests.py                # GET/POST /digests, /approve, /reject, /publish (403 Publish Gate)
-│   ├── health.py                 # Health-check endpoints (/healthz, /api/v1/healthz)
-│   ├── invites.py                # Room invitations workflow (/rooms/{key}/invites, /invites)
-│   ├── me.py                     # Profile and user preferences (/me, /me/profile)
-│   ├── radar.py                  # Community radar submissions & unique voting (/radar)
-│   ├── rooms.py                  # Topic room management (/rooms, /members, /agents)
-│   ├── router.py                 # Central v1 route aggregator
-│   ├── sources.py                # Connector registry & source health (/sources)
-│   ├── stories.py                # Clustered story catalog & feedback (/stories)
-│   ├── switch_status.py          # Switch Agent Protocol connection transparency (/switch/status)
-│   └── tasks.py                  # Ingestion & ranking task orchestration (/tasks)
-├── config/                       # Settings & Environment Validation
-│   └── settings.py               # Pydantic Settings v2 with strict bounds & masked credentials
-├── connectors/                   # Multi-Source Ingestion Connectors (Spec §7.1)
-│   ├── base.py                   # SourceConnector Protocol & ConnectorUnavailableError
-│   ├── github.py                 # GitHub REST API (README install command extraction & risk flags)
-│   ├── hackernews.py             # Algolia Hacker News Search API (zero credentials required)
-│   ├── reddit.py                 # Reddit OAuth API with graceful credential-fallback
-│   └── rss.py                    # RSS & Atom developer feed parser
-├── contracts/                    # Member 2 Shared Pydantic v2 JSON Contracts & Enums
-│   ├── analysis.py               # StoryAnalysis schema
-│   ├── claim.py                  # Claim schema
-│   ├── enums.py                  # Exact EvidenceType, EvidenceStatus, ClaimType, TrustBadgeKind
-│   ├── evidence.py               # Evidence schema (with community_signal rules)
-│   ├── submission.py             # AnalysisSubmission schema
-│   └── verification.py           # VerificationResult schema with auto-escalation
-├── core/                         # Cross-Cutting Infrastructure
-│   ├── errors.py                 # Centralized { "error": { "code", "message", "task_id" } }
-│   └── logging.py                # Structured JSON logging with automated secret redaction
-├── db/                           # Persistence Layer (MongoDB 7)
-│   ├── indexes.py                # Idempotent index creation matching Revision 2 §6
-│   ├── mongodb.py                # Motor async MongoDB client with resilient mock fallback
-│   └── seed.py                   # Initial seed data for #aiml, #cloud, #security rooms & users
-├── eval/                         # AI Evaluation Benchmark
-│   └── dataset.py                # 20 hand-labeled samples & metrics calculation (95% accuracy)
-├── fixtures/                     # Standard JSON Fixtures (7 examples)
-├── models/                       # Domain Models & MongoDB Document Schemas
-│   ├── digest.py                 # Digest, DigestItem, DigestStatus, ApprovalRecord
-│   ├── invite.py                 # RoomInvite, InviteCreate, InviteStatus
-│   ├── room.py                   # Room, RoomCreate, RoomMember, RoomRules
-│   ├── source.py                 # Source document
-│   ├── story.py                  # Story, ClusterMember, StoryFeedback
-│   ├── task.py                   # Task, TaskCreate, TaskStatus
-│   └── user.py                   # User, UserProfileUpdate
-├── pipeline/                     # Data Processing & Normalization Pipeline
-│   ├── classify.py               # Keyword taxonomy mapping (aiml, cloud, security, etc.)
-│   ├── commands.py               # Verbatim install command extraction & risk flag detection
-│   ├── dedupe.py                 # Exact URL, content-hash, and fuzzy similarity deduplication
-│   ├── normalize.py              # URL canonicalization & content_hash SHA-256 computation
-│   └── rank.py                   # Multi-variable relevance ranking (0.35*rel + 0.25*src + 0.20*rec...)
-├── scripts/                      # Developer Utilities & CLI
-│   ├── newsops.py                # Operator & agent CLI wrapper
-│   └── verify_server.py          # Server lifecycle probe & health validator
-├── switch/                       # Live Switch Agent Protocol Integration
-│   ├── agents/                   # Autonomous Agents
-│   │   ├── scout.py              # News discovery & candidate collection
-│   │   ├── analyst.py            # Claim verification & evidence evaluation
-│   │   └── editor.py             # Digest compilation & approval-gated publishing
-│   ├── protocol.py               # HTTP operations & event client
-│   └── template.yaml             # Switch platform room & agent manifest
-├── tests/                        # 70 Comprehensive Pytest Tests (100% Passing)
-├── .env.example                  # Environment configuration template
-└── main.py                       # FastAPI application entrypoint with lifespan
+```mermaid
+flowchart TD
+    subgraph Sources["Technical Data Sources"]
+        GH["GitHub API"]
+        HN["Hacker News"]
+        RD["Reddit API"]
+        RS["RSS Feeds"]
+    end
+
+    subgraph SwitchRooms["Switch Platform Rooms"]
+        AIML["#aiml"]
+        CLOUD["#cloud"]
+        SEC["#security"]
+    end
+
+    subgraph SwitchAgents["Switch Autonomous Agents"]
+        SCOUT["Scout Agent\n(Candidate Discovery)"]
+        ANALYST["Analyst Agent\n(Evidence & Claims)"]
+        EDITOR["Editor Agent\n(Digest & Approval)"]
+    end
+
+    CLI["NewsOps CLI Wrapper\nscripts/newsops.py"]
+
+    subgraph NewsOpsCore["NewsOps Backend"]
+        API["FastAPI REST API\n/api/v1"]
+        PIPE["Pipeline & Normalization\nDedupe • Rank • Classify"]
+        VERIF["No Fake News Layer\nClaim Extractor • Evidence Evaluator"]
+        AUTH["403 Publish Gate\nHuman Approver Check"]
+    end
+
+    DB[("MongoDB 7\n(mongomock fallback)")]
+    WEB["Next.js 14 Dashboard\nReact • TypeScript • Tailwind"]
+
+    Sources --> PIPE
+    PIPE --> API
+    API --> DB
+
+    SwitchRooms <--> SwitchAgents
+    SwitchAgents --> CLI
+    CLI --> API
+    API --> VERIF
+    API --> AUTH
+
+    DB --> WEB
+    WEB --> API
 ```
 
 ---
 
-## 2. Setup & Installation
+## How Switch is Used
 
-### 2.1 Prerequisites
-- Python 3.11+
-- MongoDB 7 (optional; automatic in-memory mock database is included for tests and development)
+NewsOps coordinates with three autonomous agents running in Switch Console rooms (`#aiml`, `#cloud`, `#security`):
+1. **Scout (`agents/SCOUT.md`)**: Periodically inspects candidates (`python scripts/newsops.py candidates <room> --limit 8`), posts brief highlights in the room, and asks Analyst to review.
+2. **Analyst (`agents/ANALYST.md`)**: Fetches evidence and install commands (`python scripts/newsops.py evidence <id>`), verifies claims, and submits analysis to the backend. If confidence is below 0.70 or contradictions are detected, flags for human review.
+3. **Editor (`agents/EDITOR.md`)**: Curates approved stories into digests (`python scripts/newsops.py digest <room>`) and prompts authorized room approvers. Once approved, publishes via `python scripts/newsops.py publish <id>`.
 
-### 2.2 Installation
-```bash
-# Clone and enter directory
-cd newsops
-
-# Install required dependencies
-pip install fastapi uvicorn pydantic pydantic-settings motor pymongo mongomock-motor httpx pytest anyio
-```
-
-### 2.3 Configuration
-Copy `.env.example` to `.env`:
-```bash
-cp .env.example .env
-```
-Key variables:
-- `MONGODB_URI`: Connection string (defaults to `mongodb://localhost:27017`; automatically falls back to `mongomock-motor` if MongoDB is offline).
-- `AGENT_API_TOKEN`: Secret token used by Switch template agents for `/api/v1/agent/*`.
-- `SWITCH_BASE_URL`: Base URL for Switch platform (optional for live runtime).
-- `SWITCH_POSTER_TOKEN`: Auth token for Switch agent messaging.
+> **TODO(SWITCH-OWNER)**:
+> The Switch room configuration, template import, and platform webhook endpoints are managed in Switch Console by the project owner (Nikhila). System prompts in `agents/SCOUT.md`, `agents/ANALYST.md`, and `agents/EDITOR.md` are copied into the Switch platform agent templates.
 
 ---
 
-## 3. Running the Server
+## Quick Start
 
-### Start FastAPI Server
+### Option 1: Docker Compose (All-in-one)
 ```bash
-python -m uvicorn newsops.main:app --host 0.0.0.0 --port 8000 --reload
+docker compose up --build
+```
+- **Web Dashboard**: `http://localhost:3000`
+- **FastAPI API**: `http://localhost:8000`
+- **Interactive Swagger Docs**: `http://localhost:8000/docs`
+
+### Option 2: Local Development Mode (No Docker required)
+```bash
+# 1. Install backend packages
+pip install -r requirements.txt
+
+# 2. Run backend (uses automatic in-memory MongoDB fallback if local Mongo is absent)
+python run_backend.py
+
+# 3. In another terminal, install and run frontend
+cd web
+npm ci --legacy-peer-deps
+npm run dev
 ```
 
-### Verify Server Health Live
-```bash
-python newsops/scripts/verify_server.py
-```
-Outputs:
-```json
-{
-  "status": "ok",
-  "service": "NewsOps",
-  "environment": "dev",
-  "database": {
-    "status": "connected",
-    "database": "newsops",
-    "is_mock": true,
-    "engine": "mongomock-motor"
-  },
-  "version": "2.0.0-rev2"
-}
-```
+### Option 3: Windows Launcher
+Run `launch.bat` and select `[1]` for Docker Compose, `[2]` for Local Dev, or `[3]` for Pytest.
 
 ---
 
-## 4. Part 4 — Switch Agent Protocol Implementation
+## Verification & Smoke Test
 
-NewsOps implements three autonomous agents coordinating via the Switch Agent Protocol:
-
-1. **SCOUT (`newsops.switch.agents.scout.ScoutAgent`)**:
-   - Queries `GET /api/v1/stories` for new candidate stories across rooms.
-   - Enqueues ingestion tasks via `POST /api/v1/tasks`.
-   - Posts discovery briefings to Switch topic rooms.
-   - Hands off story candidates to the **Analyst**.
-
-2. **ANALYST (`newsops.switch.agents.analyst.AnalystSwitchAgent`)**:
-   - Fetches story details and source artifacts.
-   - Sanitizes untrusted content with `PromptGuard`.
-   - Extracts atomic claims (`VERSION`, `SECURITY`, `BENCHMARK`, `CAPABILITY`).
-   - Cross-checks claims against multi-tier evidence (`PRIMARY_SOURCE`, `INDEPENDENT_REPORTING`, `COMMUNITY_SIGNAL`).
-   - Disallows `COMMUNITY_SIGNAL` alone from verifying a claim as `SUPPORTED`.
-   - Auto-escalates stories to `review_required` if confidence < 0.70 or contradictions exist.
-   - Posts structured evaluation to `POST /api/v1/agent/stories/{id}/analysis`.
-
-3. **EDITOR (`newsops.switch.agents.editor.EditorAgent`)**:
-   - Assembles verified candidate stories into curated digests (`GET /api/v1/digests`).
-   - **Enforces the Non-Negotiable Publish Gate**: Publication via `POST /api/v1/digests/{id}/publish` returns **HTTP 403 Forbidden** unless the digest has been approved by an authorized room reviewer.
-
----
-
-## 6. NewsOps CLI
-
-The `scripts/newsops.py` CLI provides command-line control for human operators and Switch agents:
-
+To verify end-to-end functionality against a running instance:
 ```bash
-# 1. Fetch candidate stories for room
-python newsops/scripts/newsops.py candidates aiml
+python scripts/smoke.py
+```
+This tests the full agent workflow:
+1. `GET /agent/candidates` (Scout)
+2. `GET /agent/stories/{id}/evidence` (Analyst)
+3. `POST /agent/stories/{id}/analysis` (Analyst submission)
+4. `POST /agent/digests` (Editor compilation)
+5. `POST /digests/{id}/publish` (Verified 403 Forbidden on unapproved draft)
+6. `POST /agent/digests/{id}/decision` (Approval by authorized room reviewer)
+7. `POST /digests/{id}/publish` (Publish succeeds once approved)
 
-# 2. Inspect evidence for a story
-python newsops/scripts/newsops.py evidence <story_id>
+Run unit and integration test suites:
+```bash
+# Backend pytest suite (78 tests)
+python -m pytest tests -v
 
-# 3. Submit analysis payload
-python newsops/scripts/newsops.py analysis <story_id> fixtures/example_analysis_submission.json
-
-# 4. Record human approval decision
-python newsops/scripts/newsops.py decision <digest_id> approve "@alice"
-
-# 5. Publish approved digest (returns 403 if unapproved)
-python newsops/scripts/newsops.py publish <digest_id>
+# Frontend type check and vitest suite
+cd web
+npm run type-check
+npm test
 ```
 
 ---
 
-## 7. Running Tests & Benchmarks
+## Environment Variables
 
-### Complete Pytest Suite (70 Tests)
-```bash
-python -m pytest newsops/tests -v
-```
-All **70 tests** pass:
-- `test_contracts.py` (21 tests) — Evidence & verification contracts, bounds, validation rules
-- `test_fixtures.py` (7 tests) — Schema alignment of all sample fixtures
-- `test_api.py` (8 tests) — FastAPI routes, error responses, authentication
-- `test_models.py` (5 tests) — Domain models & MongoDB schemas
-- `test_pipeline.py` (13 tests) — Deduplication, ranking, canonicalization, command extraction
-- `test_ai.py` (6 tests) — Prompt injection defense, claim extraction, evidence evaluation
-- `test_connectors.py` (3 tests) — SourceConnector protocols & graceful fallbacks
-- `test_switch.py` (4 tests) — Scout, Analyst, Editor agents and protocol client
-- `test_digest_approval.py` (3 tests) — 403 publish gate & approval transitions
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `NEWSOPS_OFFLINE` | `True` | Loads rich seeded stories across #aiml, #cloud, #security without API keys |
+| `AGENT_API_TOKEN` | `dev-agent-secret-token-change-me` | Shared bearer token for `/agent/*` endpoints |
+| `NEWSOPS_API` | `http://localhost:8000/api/v1` | NewsOps API base URL used by CLI wrapper |
+| `MONGODB_URI` | `mongodb://localhost:27017` | MongoDB connection string (falls back to mongomock-motor) |
+| `MONGODB_DB` | `newsops` | Database name |
+| `CORS_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Allowed origins for cross-origin requests |
+| `NEXT_PUBLIC_API_BASE`| `http://localhost:8000/api/v1` | Frontend API connection address |
+| `NEXT_PUBLIC_MOCK` | `0` | Set `1` to run frontend against MSW mocks |
+| `NEXT_PUBLIC_MATTERMOST_URL`| `""` | Optional link to Mattermost / Switch chat channels |
 
-### AI Evaluation Benchmark
-```bash
-python -m newsops.eval.dataset
-```
-Benchmark Results:
-- **Total Samples**: 20 hand-labeled technical announcements
-- **Topic Accuracy**: 95.0%
-- **Vulnerability Precision**: 75.0%
-- **Vulnerability Recall**: 60.0%
-- **Vulnerability F1 Score**: 0.6667
+---
+
+## Data Sources & Operational Limits
+
+- **GitHub REST API**: Ingests release notes, tags, and commits. Extracts verbatim README install commands.
+- **Hacker News (Algolia Search API)**: Used for discovery and community discussion signals only. Zero credentials required.
+- **Reddit OAuth**: Used for developer sentiment and early discovery signals.
+- **OSV.dev / RSS Feeds**: Authoritative security advisories and CVE reports.
+- **Rate Limits & Budgets**: Capped at 60 articles per ingestion run (`TASK_MAX_ARTICLES=60`). Agent runs capped at 8 candidates per cycle.
+
+---
+
+## Benchmark Evaluation
+
+The evaluation suite (`eval/dataset.py`) contains a **20-sample hand-labelled test set** of real-world developer claims across version updates, security advisories, and benchmark statements. It measures precision and contradiction detection under controlled inputs; it does not claim generalized natural language accuracy across arbitrary web text.
+
+---
+
+## Honest Limitations
+
+1. **Local Agent Dispatch**: Switch agents run via the local CLI wrapper on a workstation; large-scale distributed agent swarms across cloud clusters require Switch Platform enterprise hosting.
+2. **Supported Platforms**: GitHub, Hacker News, Reddit, and RSS/Atom feeds are supported. Proprietary platforms (such as X/Twitter and Instagram) are unsupported.
+3. **Trust Badges**: Badges (`primary`, `vendor_reported`, `community_signal`) classify source provenance; they are not philosophical truth guarantees. `community_signal` (Reddit/HN) is discovery-only and can never alone support a factual claim.
+4. **Verbatim Install Commands**: Commands are deterministically extracted substrings of official README files and are never auto-executed by NewsOps.
+
+---
+
+## License
+
+MIT License (see [LICENSE](LICENSE)).
