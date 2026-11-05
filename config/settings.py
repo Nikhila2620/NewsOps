@@ -44,6 +44,10 @@ class Settings(BaseSettings):
         default="http://localhost:8000/api/v1",
         description="Full URL path to NewsOps API for CLI wrapper",
     )
+    CORS_ORIGINS: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000",
+        description="Comma-separated allowed CORS origins",
+    )
 
     # Database (MongoDB 7)
     MONGODB_URI: str = Field(
