@@ -9,13 +9,16 @@ import os
 import sys
 import time
 import subprocess
+from pathlib import Path
 import httpx
 
 
 def main():
     print("[1/4] Starting NewsOps FastAPI server on 127.0.0.1:8000...")
     env = os.environ.copy()
-    env["PYTHONPATH"] = "E:\\"
+    # Resolve the parent directory dynamically so `newsops` package imports work on any machine
+    repo_parent = str(Path(__file__).resolve().parent.parent.parent)
+    env["PYTHONPATH"] = repo_parent
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "newsops.main:app", "--host", "127.0.0.1", "--port", "8000"],
         stdout=subprocess.PIPE,
