@@ -53,5 +53,8 @@ Thumbs.db
 .idea/
 *.log
 
-# NewsOps zip
+# Archives & backups
+*.zip
+*.tar.gz
+*.tgz
 newsops_complete_v2.zip
