@@ -1,0 +1,29 @@
+{
+  "claim_id": "claim-pydantic-001",
+  "status": "supported",
+  "confidence": 0.98,
+  "rationale": "Claim verified directly against official release notes and GitHub repository release tag v2.10.0.",
+  "claim": {
+    "claim_id": "claim-pydantic-001",
+    "statement": "Pydantic v2.10 introduces native JSON Schema serialization performance improvements.",
+    "claim_type": "capability",
+    "source_reference": "README.md:lines 45-48",
+    "source_url": "https://github.com/pydantic/pydantic",
+    "is_vendor_claim": true,
+    "confidence": 0.95,
+    "entities": ["pydantic", "fastapi"]
+  },
+  "evidence": [
+    {
+      "evidence_url": "https://github.com/pydantic/pydantic/releases/tag/v2.10.0",
+      "evidence_type": "primary_source",
+      "source_reference": "GitHub API release tag v2.10.0",
+      "status": "supported",
+      "confidence": 0.98,
+      "confidence_rationale": "Verified through official GitHub releases API."
+    }
+  ],
+  "primary_evidence_url": "https://github.com/pydantic/pydantic/releases/tag/v2.10.0",
+  "trust_badge": "Primary (API-verified)",
+  "review_required": false
+}

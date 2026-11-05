@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  # ── MongoDB ───────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: newsops
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  # ── NewsOps FastAPI backend ───────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+      MONGODB_DB: newsops
+      APP_ENV: dev
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      AGENT_API_TOKEN: ${AGENT_API_TOKEN:-dev-agent-secret}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-secret-key-change-in-production}
+      SWITCH_BASE_URL: ${SWITCH_BASE_URL:-}
+      SWITCH_POSTER_TOKEN: ${SWITCH_POSTER_TOKEN:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    working_dir: /app
+
+  # ── NewsOps Next.js frontend ──────────────────────────────────────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE: http://backend:8000/api/v1
+      NEXT_PUBLIC_MATTERMOST_URL: ${NEXT_PUBLIC_MATTERMOST_URL:-}
+      NEXT_PUBLIC_MOCK: ${NEXT_PUBLIC_MOCK:-}
+    ports:
+      - "3000:3000"
+
+volumes:
+  mongo_data:

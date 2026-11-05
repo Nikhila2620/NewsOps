@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─────────────────────────────────────────────
+   Design tokens — light (default)
+───────────────────────────────────────────── */
+:root {
+  --bg:         #e9eeeb;
+  --surface:    #f8faf9;
+  --surface2:   #e1e8e4;
+  --ink:        #0e1615;
+  --mute:       #566763;
+  --line:       #d0dad5;
+  --accent:     #d93a16;
+
+  --scout:      #0c7c72;
+  --analyst:    #4850d4;
+  --editor:     #d93a16;
+
+  --good-fg:    #0d7f57;
+  --good-bg:    #d6f0e5;
+  --vendor-fg:  #1f5fd0;
+  --vendor-bg:  #dde8fb;
+  --warn-fg:    #8f5b00;
+  --warn-bg:    #fbebc7;
+  --bad-fg:     #c0263a;
+  --bad-bg:     #fbdde2;
+
+  --code-bg:    #0e1615;
+
+  --radius:     16px;
+  --radius-sm:  8px;
+  --border:     1px solid var(--line);
+}
+
+/* ─────────────────────────────────────────────
+   Dark theme
+───────────────────────────────────────────── */
+[data-theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:         #0a100f;
+    --surface:    #121b19;
+    --surface2:   #1a2724;
+    --ink:        #e7f0ed;
+    --mute:       #8ea39d;
+    --line:       #243430;
+    --accent:     #ff6a4d;
+
+    --scout:      #3fd0c2;
+    --analyst:    #9aa1ff;
+    --editor:     #ff6a4d;
+
+    --good-fg:    #4fd6a1;
+    --good-bg:    #12332a;
+    --vendor-fg:  #7aa7ff;
+    --vendor-bg:  #172545;
+    --warn-fg:    #f0b64a;
+    --warn-bg:    #392c0e;
+    --bad-fg:     #ff7d8e;
+    --bad-bg:     #3d1820;
+  }
+}
+
+[data-theme="dark"] {
+  --bg:         #0a100f;
+  --surface:    #121b19;
+  --surface2:   #1a2724;
+  --ink:        #e7f0ed;
+  --mute:       #8ea39d;
+  --line:       #243430;
+  --accent:     #ff6a4d;
+  --scout:      #3fd0c2;
+  --analyst:    #9aa1ff;
+  --editor:     #ff6a4d;
+  --good-fg:    #4fd6a1;
+  --good-bg:    #12332a;
+  --vendor-fg:  #7aa7ff;
+  --vendor-bg:  #172545;
+  --warn-fg:    #f0b64a;
+  --warn-bg:    #392c0e;
+  --bad-fg:     #ff7d8e;
+  --bad-bg:     #3d1820;
+}
+
+/* ─────────────────────────────────────────────
+   Base reset
+───────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Instrument Sans', system-ui, sans-serif;
+  line-height: 1.6;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+code, kbd, pre, .mono {
+  font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+  font-size: 0.875em;
+}
+
+/* Focus ring — accessible, visible */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar (subtle) */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }

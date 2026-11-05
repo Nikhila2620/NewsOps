@@ -1,0 +1,49 @@
+{
+  "story_id": "story-unverified-benchmark",
+  "analysis": {
+    "summary": "A startup claimed their new inference framework is 50x faster than vLLM in synthetic benchmarks.",
+    "why_it_matters": "Inference speed claims significantly affect cloud hosting budget allocations for LLM deployment teams.",
+    "practical_impact": "Teams considering migrating from vLLM must await independent validation before rebuilding inference pipelines.",
+    "affected_users": ["mlops-engineers", "infrastructure-leads"],
+    "caveats": ["Vendor benchmark conducted on private unreleased hardware configuration."],
+    "unknowns": ["No reproducible code or public harness provided."],
+    "submitted_by": "newsops-analyst",
+    "submitted_at": "2026-11-04T13:00:00Z",
+    "status": "review_required",
+    "confidence": 0.45
+  },
+  "claims": [
+    {
+      "claim_id": "claim-perf-002",
+      "statement": "Framework achieves 50x throughput compared to vLLM on Llama 3.",
+      "claim_type": "benchmark",
+      "source_reference": "Blog post announcement",
+      "is_vendor_claim": true,
+      "confidence": 0.50
+    }
+  ],
+  "verification_results": [
+    {
+      "claim_id": "claim-perf-002",
+      "status": "insufficient_evidence",
+      "confidence": 0.40,
+      "rationale": "Only self-reported vendor blog claims available; no independent peer reproduction or public repo code found.",
+      "trust_badge": "Needs review",
+      "review_required": true,
+      "evidence": [
+        {
+          "evidence_url": "https://example-vendor.com/blog/speedup",
+          "evidence_type": "secondary_commentary",
+          "source_reference": "Vendor blog post",
+          "status": "insufficient_evidence",
+          "confidence": 0.40,
+          "confidence_rationale": "Vendor marketing claim without reproduction harness."
+        }
+      ]
+    }
+  ],
+  "overall_confidence": 0.42,
+  "review_required": true,
+  "agent_id": "newsops-analyst",
+  "submitted_at": "2026-11-04T13:05:00Z"
+}

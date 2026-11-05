@@ -1,0 +1,15 @@
+{
+  "claim_id": "claim-pydantic-001",
+  "statement": "Pydantic v2.10 introduces native JSON Schema serialization performance improvements.",
+  "claim_type": "capability",
+  "source_reference": "README.md:lines 45-48",
+  "source_url": "https://github.com/pydantic/pydantic",
+  "quote": "v2.10 includes significant speedups in model_dump_json for complex schemas.",
+  "is_vendor_claim": true,
+  "confidence": 0.95,
+  "entities": [
+    "pydantic",
+    "pydantic-core",
+    "python"
+  ]
+}

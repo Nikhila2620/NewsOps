@@ -1,0 +1,45 @@
+version: "1.0"
+name: "newsops"
+description: "NewsOps × Switch Developer Intelligence Platform"
+
+rooms:
+  - key: "aiml"
+    name: "AI / Machine Learning Intelligence"
+    topics: ["aiml"]
+  - key: "cloud"
+    name: "Cloud & Infrastructure"
+    topics: ["cloud"]
+  - key: "security"
+    name: "Security Vulnerabilities & Advisories"
+    topics: ["security"]
+
+agents:
+  - id: "scout"
+    name: "NewsOps Scout"
+    role: "Scout"
+    description: "Discovers emerging technology releases, news, and tools across GitHub, Hacker News, Reddit, and RSS."
+    capabilities:
+      - "news_discovery"
+      - "source_collection"
+      - "trend_identification"
+    handoff_to: "analyst"
+
+  - id: "analyst"
+    name: "NewsOps Analyst"
+    role: "Analyst"
+    description: "Verifies claims against primary sources, checks for contradictions, and scores confidence."
+    capabilities:
+      - "claim_verification"
+      - "evidence_evaluation"
+      - "confidence_scoring"
+    handoff_to: "editor"
+
+  - id: "editor"
+    name: "NewsOps Editor"
+    role: "Editor"
+    description: "Curates verified developer intelligence digests and publishes only upon human approval."
+    capabilities:
+      - "digest_creation"
+      - "editorial_summary"
+      - "publication"
+    requires_approval: true

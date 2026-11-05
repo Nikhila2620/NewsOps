@@ -1,0 +1,18 @@
+{
+  "evidence_url": "https://github.com/pydantic/pydantic/releases/tag/v2.10.0",
+  "evidence_type": "primary_source",
+  "source_reference": "GitHub API release tag v2.10.0",
+  "status": "supported",
+  "confidence": 0.98,
+  "confidence_rationale": "Directly verified against official repository release tag and commit artifacts via GitHub API.",
+  "claim": "Pydantic v2.10 introduces native JSON Schema serialization performance improvements.",
+  "claim_type": "version",
+  "claim_id": "claim-pydantic-001",
+  "excerpt": "Release notes for v2.10.0: Core Rust serializer optimized for nested BaseModel dumps.",
+  "retrieved_at": "2026-11-04T12:00:00Z",
+  "metadata": {
+    "commit_sha": "a1b2c3d4e5f6789012345678901234567890abcd",
+    "stars": 19500,
+    "tag": "v2.10.0"
+  }
+}

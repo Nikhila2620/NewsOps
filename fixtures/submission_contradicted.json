@@ -1,0 +1,50 @@
+{
+  "story_id": "story-license-conflict",
+  "analysis": {
+    "summary": "Repository author claimed the project transitioned from AGPL to Apache 2.0 license.",
+    "why_it_matters": "License terms dictate enterprise adoption readiness and legal compliance.",
+    "practical_impact": "Developers must not incorporate the library under the impression it is Apache 2.0 until repo headers match.",
+    "affected_users": ["open-source-developers", "enterprise-architects"],
+    "caveats": ["LICENSE file in repository root still explicitly specifies AGPL-3.0-only."],
+    "unknowns": ["Whether PR to update LICENSE file was merged or abandoned."],
+    "submitted_by": "newsops-analyst",
+    "submitted_at": "2026-11-04T13:30:00Z",
+    "status": "review_required",
+    "confidence": 0.95
+  },
+  "claims": [
+    {
+      "claim_id": "claim-lic-003",
+      "statement": "Project is now fully licensed under Apache 2.0.",
+      "claim_type": "license",
+      "source_reference": "Social post by author",
+      "is_vendor_claim": true,
+      "confidence": 0.90
+    }
+  ],
+  "verification_results": [
+    {
+      "claim_id": "claim-lic-003",
+      "status": "contradicted",
+      "confidence": 0.99,
+      "rationale": "Direct inspection of GitHub repository LICENSE file shows GNU Affero General Public License v3.0, contradicting social claim.",
+      "primary_evidence_url": "https://github.com/example/repo/blob/main/LICENSE",
+      "trust_badge": "Needs review",
+      "review_required": true,
+      "evidence": [
+        {
+          "evidence_url": "https://github.com/example/repo/blob/main/LICENSE",
+          "evidence_type": "primary_source",
+          "source_reference": "GitHub main branch LICENSE file",
+          "status": "contradicted",
+          "confidence": 0.99,
+          "confidence_rationale": "License text explicitly states AGPL v3.0."
+        }
+      ]
+    }
+  ],
+  "overall_confidence": 0.95,
+  "review_required": true,
+  "agent_id": "newsops-analyst",
+  "submitted_at": "2026-11-04T13:35:00Z"
+}
