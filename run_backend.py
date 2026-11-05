@@ -3,9 +3,14 @@
 NewsOps Local Backend Runner.
 Ensures 'newsops' package resolves correctly and starts Uvicorn.
 """
+import os
 import sys
 from pathlib import Path
 import importlib.util
+
+# Set faster fallback timeout for local development without local MongoDB
+if "MONGODB_TIMEOUT_MS" not in os.environ:
+    os.environ["MONGODB_TIMEOUT_MS"] = "1500"
 
 root = Path(__file__).resolve().parent
 if "newsops" not in sys.modules:
