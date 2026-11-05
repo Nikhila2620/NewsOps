@@ -15,6 +15,8 @@ class RoomRules(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     min_score: float = Field(default=0.5, ge=0.0, le=1.0, description="Minimum rank score threshold")
+    min_confidence: float = Field(default=0.70, ge=0.0, le=1.0, description="Minimum confidence threshold")
+    max_items: int = Field(default=8, ge=1, le=50, description="Maximum items per candidate/digest")
     priorities: List[str] = Field(default_factory=list, description="Priority focus topics/tags")
     blocked: List[str] = Field(default_factory=list, description="Blocked tags to filter out")
 

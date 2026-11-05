@@ -7,6 +7,7 @@ Central router mounting all v1 routes.
 from fastapi import APIRouter
 from .health import router as health_router
 from .agent_analysis import router as agent_router
+from .agent import router as agent_core_router
 from .me import router as me_router
 from .tasks import router as tasks_router
 from .stories import router as stories_router
@@ -26,6 +27,7 @@ api_v1_router = APIRouter()
 # Mount sub-routers
 api_v1_router.include_router(health_router)
 api_v1_router.include_router(agent_router)
+api_v1_router.include_router(agent_core_router)
 api_v1_router.include_router(me_router)
 api_v1_router.include_router(tasks_router)
 api_v1_router.include_router(stories_router)

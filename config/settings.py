@@ -40,6 +40,10 @@ class Settings(BaseSettings):
         min_length=8,
         description="Shared secret bearer token used by Switch template agents to authenticate against /agent/*",
     )
+    NEWSOPS_OFFLINE: bool = Field(
+        default=True,
+        description="Enable offline mode with rich seed data",
+    )
     NEWSOPS_API: str = Field(
         default="http://localhost:8000/api/v1",
         description="Full URL path to NewsOps API for CLI wrapper",
