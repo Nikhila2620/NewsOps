@@ -89,7 +89,7 @@ newsops/
 ## 2. Setup & Installation
 
 ### 2.1 Prerequisites
-- Python 3.10+ (tested on Python 3.15)
+- Python 3.11+
 - MongoDB 7 (optional; automatic in-memory mock database is included for tests and development)
 
 ### 2.2 Installation
@@ -143,29 +143,7 @@ Outputs:
 
 ---
 
-## 4. Part 3 — Connect Switch Docs MCP to Antigravity
-
-Antigravity uses the standard Model Context Protocol (MCP) Streamable HTTP transport to connect with documentation servers.
-
-### Configuration Location
-Open `C:\Users\ESHWAR\.gemini\config\mcp_config.json` (or `~/.gemini/config/mcp_config.json`).
-
-### Add the Switch Docs MCP Server
-Add the `switch-docs` server entry:
-```json
-{
-  "mcpServers": {
-    "switch-docs": {
-      "url": "https://docs.switchagents.ai/mcp"
-    }
-  }
-}
-```
-*Note: Existing MCP servers in `mcp_config.json` are preserved. The IDE automatically discovers tools and prompts exposed by the Switch documentation endpoint.*
-
----
-
-## 5. Part 4 — Switch Agent Protocol Implementation
+## 4. Part 4 — Switch Agent Protocol Implementation
 
 NewsOps implements three autonomous agents coordinating via the Switch Agent Protocol:
 
