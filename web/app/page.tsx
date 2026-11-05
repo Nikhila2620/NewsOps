@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import Shell from '@/components/Shell'
 import { TrustBadge } from '@/components/TrustBadge'
 import { PipelineStrip } from '@/components/PipelineStrip'
-import { keys, fetchStories, fetchRoomState, type Story } from '@/api/queries'
+import { keys, fetchStories, fetchRoomState, repostStory, type Story } from '@/api/queries'
 import { useRoomStream } from '@/features/room/useRoomStream'
 import { pushToast } from '@/components/Toast'
 import { api } from '@/api/client'
@@ -47,13 +48,19 @@ function CopyButton({ text }: { text: string }) {
 function StoryCard({ story, isNew, onClick }: { story: Story; isNew: boolean; onClick: () => void }) {
   const handleRepost = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    const storyId = story._id || (story as any).id
     try {
-      await api.post(`/rooms/${story.room_key}/messages`, {
-        text: `Reposting: ${story.title} — ${story.summary}`,
-      })
-      pushToast({ kind: 'success', message: 'Reposted to room' })
+      await repostStory(storyId, story.room_key)
+      pushToast({ kind: 'success', message: `Reposted into #${story.room_key}!` })
     } catch {
-      pushToast({ kind: 'error', message: 'Repost failed' })
+      try {
+        await api.post(`/rooms/${story.room_key}/messages`, {
+          text: `Reposting: ${story.title} — ${story.summary}`,
+        })
+        pushToast({ kind: 'success', message: 'Reposted to room' })
+      } catch {
+        pushToast({ kind: 'error', message: 'Repost failed' })
+      }
     }
   }
 
@@ -136,11 +143,13 @@ function StoryCard({ story, isNew, onClick }: { story: Story; isNew: boolean; on
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        <button onClick={e => { e.stopPropagation(); onClick() }}
-                style={{ fontSize: 12, padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
-                         background: 'var(--surface2)', color: 'var(--ink)', border: '1px solid var(--line)' }}>
-          Details
-        </button>
+        <Link href={`/stories/${story._id || (story as any).id}`}
+              onClick={e => e.stopPropagation()}
+              style={{ fontSize: 12, padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
+                       background: 'var(--surface2)', color: 'var(--ink)', border: '1px solid var(--line)',
+                       textDecoration: 'none' }}>
+          Details ↗
+        </Link>
         <button onClick={handleRepost}
                 style={{ fontSize: 12, padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
                          background: 'var(--surface2)', color: 'var(--ink)', border: '1px solid var(--line)' }}>

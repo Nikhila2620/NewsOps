@@ -103,3 +103,26 @@ async def submit_story_feedback(
         "story_id": id,
         "feedback_type": feedback.type,
     }
+
+
+from pydantic import BaseModel as _BaseModel
+
+class RepostPayload(_BaseModel):
+    room_key: str
+
+@router.post(
+    "/{id}/repost",
+    status_code=status.HTTP_200_OK,
+    summary="Repost story into a room",
+)
+async def repost_story(
+    id: str,
+    payload: RepostPayload,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+):
+    story = await db.stories.find_one({"_id": id})
+    if not story:
+        raise NotFoundError("Story", id)
+    await db.stories.update_one({"_id": id}, {"$addToSet": {"topics": payload.room_key}})
+    return {"status": "reposted", "story_id": id, "room_key": payload.room_key}
+

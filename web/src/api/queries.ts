@@ -26,6 +26,7 @@ export interface Story {
   title: string
   summary: string
   source_domain: string
+  source_url?: string
   published_at: string
   room_key: string
   trust_badge: 'primary' | 'vendor_reported' | 'community_signal'
@@ -34,8 +35,22 @@ export interface Story {
   risk_flags: string[]
   install_command?: string
   install_commit?: string
+  commit_sha?: string
   claims?: ClaimItem[]
+  evidence?: Array<{
+    evidence_url: string
+    evidence_type: string
+    source_reference: string
+    status: string
+    confidence?: number
+  }>
+  analysis?: {
+    summary?: string
+    why_it_matters?: string
+    confidence?: number
+  }
   score?: number
+  seeded?: boolean
 }
 
 export interface ClaimItem {
@@ -192,3 +207,28 @@ export const saveProject = (content: string, filename?: string) =>
 
 // ─── Demo reset ───────────────────────────────────────────────────────────
 export const resetDemo = () => api.post('/demo/reset')
+
+// ─── Agent Activity & Coordination ─────────────────────────────────────────
+export interface AgentActivity {
+  _id?: string
+  id?: string
+  agent: string
+  room: string
+  action: string
+  story_id?: string
+  message: string
+  created_at: string
+}
+
+export const fetchAgentActivity = (room?: string) => {
+  const qs = room ? `?room=${room}` : ''
+  return api.get<AgentActivity[]>(`/agent/activity${qs}`)
+}
+
+export const repostStory = (storyId: string, roomKey: string) =>
+  api.post<{ status: string; story_id: string; room_key: string }>(`/stories/${storyId}/repost`, { room_key: roomKey })
+
+export const sendRoomInvite = (roomKey: string, invitee_handle: string) =>
+  api.post(`/rooms/${roomKey}/invites`, { invitee_handle })
+
+export const fetchInvites = () => api.get<any[]>('/invites')

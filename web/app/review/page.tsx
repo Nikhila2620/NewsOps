@@ -60,12 +60,14 @@ export default function ReviewPage() {
     }
   }
 
-  const approve   = useMutation({ mutationFn: (id: string) => approveDigest(id),
-    onSuccess: () => { pushToast({ kind: 'success', message: 'Digest approved' }); invalidate() },
+  const [reason, setReason] = useState('')
+
+  const approve   = useMutation({ mutationFn: (id: string) => approveDigest(id, reason || 'Approved via dashboard'),
+    onSuccess: () => { pushToast({ kind: 'success', message: 'Digest approved' }); invalidate(); setReason('') },
     onError: e => { pushToast({ kind: 'error', message: e instanceof ApiError ? e.message : 'Approve failed' }); invalidate() }
   })
-  const reject    = useMutation({ mutationFn: (id: string) => rejectDigest(id),
-    onSuccess: () => { pushToast({ kind: 'success', message: 'Digest rejected' }); invalidate() },
+  const reject    = useMutation({ mutationFn: (id: string) => rejectDigest(id, reason || 'Rejected via dashboard'),
+    onSuccess: () => { pushToast({ kind: 'success', message: 'Digest rejected' }); invalidate(); setReason('') },
     onError: e => { pushToast({ kind: 'error', message: e instanceof ApiError ? e.message : 'Reject failed' }); invalidate() }
   })
   const reqChange = useMutation({ mutationFn: (id: string) => requestChanges(id),
@@ -182,28 +184,46 @@ export default function ReviewPage() {
                   </span>
                 </div>
 
-                {/* Action buttons */}
-                {digest.status === 'review_required' && (
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <button onClick={() => reqChange.mutate(digest._id)}
-                            style={{ padding: '7px 14px', borderRadius: 7, fontSize: 13,
-                                     cursor: 'pointer', border: '1px solid var(--line)',
-                                     background: 'var(--surface2)', color: 'var(--ink)' }}>
-                      Request changes
-                    </button>
-                    <button onClick={() => reject.mutate(digest._id)}
-                            style={{ padding: '7px 14px', borderRadius: 7, fontSize: 13,
-                                     cursor: 'pointer', border: '1px solid var(--bad-fg)',
-                                     background: 'var(--bad-bg)', color: 'var(--bad-fg)' }}>
-                      Reject
-                    </button>
-                    <button onClick={() => approve.mutate(digest._id)}
-                            style={{ padding: '7px 14px', borderRadius: 7, fontSize: 13,
-                                     cursor: 'pointer', border: '1px solid var(--good-fg)',
-                                     background: 'var(--good-bg)', color: 'var(--good-fg)',
-                                     fontWeight: 700 }}>
-                      Approve
-                    </button>
+                {/* Reason input and Action buttons */}
+                {(digest.status === 'review_required' || digest.status === 'draft') && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12, width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <input
+                        type="text"
+                        placeholder="Reason or editorial notes (optional)"
+                        value={reason}
+                        onChange={e => setReason(e.target.value)}
+                        style={{
+                          flex: 1, minWidth: 220, padding: '6px 12px', borderRadius: 6,
+                          fontSize: 13, background: 'var(--bg)', color: 'var(--ink)',
+                          border: '1px solid var(--line)',
+                        }}
+                      />
+                      <button onClick={() => reqChange.mutate(digest._id)}
+                              style={{ padding: '7px 14px', borderRadius: 7, fontSize: 13,
+                                       cursor: 'pointer', border: '1px solid var(--line)',
+                                       background: 'var(--surface2)', color: 'var(--ink)' }}>
+                        Request changes
+                      </button>
+                      <button onClick={() => reject.mutate(digest._id)}
+                              style={{ padding: '7px 14px', borderRadius: 7, fontSize: 13,
+                                       cursor: 'pointer', border: '1px solid var(--bad-fg)',
+                                       background: 'var(--bad-bg)', color: 'var(--bad-fg)' }}>
+                        Reject
+                      </button>
+                      <button onClick={() => approve.mutate(digest._id)}
+                              style={{ padding: '7px 14px', borderRadius: 7, fontSize: 13,
+                                       cursor: 'pointer', border: '1px solid var(--good-fg)',
+                                       background: 'var(--good-bg)', color: 'var(--good-fg)',
+                                       fontWeight: 700 }}>
+                        Approve
+                      </button>
+                    </div>
+                    {roomState?.approvers && roomState.approvers.length > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--mute)' }}>
+                        Authorized Approvers: {roomState.approvers.map(a => `@${a.replace('@', '')}`).join(', ')}
+                      </div>
+                    )}
                   </div>
                 )}
                 {digest.status === 'approved' && (

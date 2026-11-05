@@ -11,64 +11,101 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000/api/v1'
 const STORIES = [
   {
     _id: 'story-mock-001',
-    title: 'LangChain 0.3 drops Python 3.8 support and ships async-first APIs',
-    summary: 'The 0.3 release removes deprecated sync wrappers and makes async the default execution path.',
+    id: 'story-mock-001',
+    title: 'vLLM v0.6.4: Speculative Decoding & Chunked Prefill Acceleration',
+    summary: 'The vLLM release introduces hardware-optimized speculative decoding reducing TTFT by 32% for Llama 3 models.',
     source_domain: 'github.com',
+    source_url: 'https://github.com/vllm-project/vllm/releases/tag/v0.6.4',
     published_at: new Date(Date.now() - 3600000).toISOString(),
     room_key: 'aiml',
+    topics: ['aiml', 'llm'],
     trust_badge: 'primary',
-    confidence: 0.92,
+    badge: 'primary',
+    confidence: 0.95,
     risk_flags: [],
-    install_command: 'pip install langchain==0.3.0',
-    install_commit: 'abc1234defg',
+    install_command: 'pip install vllm>=0.6.4',
+    install_commit: 'a1b2c3d4e5f67890abcdef1234567890abcdef12',
+    commit_sha: 'a1b2c3d4e5f67890abcdef1234567890abcdef12',
+    seeded: true,
     claims: [
-      { text: 'Python 3.8 support dropped', status: 'supported', evidence_note: 'Confirmed in CHANGELOG.md' },
-      { text: 'Async is now the default', status: 'supported', evidence_note: 'Official blog post' },
+      { text: 'vLLM v0.6.4 supports multi-step speculative decoding', status: 'supported', evidence_note: 'Confirmed in release notes' },
+      { text: 'Chunked prefill is enabled by default in v0.6.4', status: 'supported', evidence_note: 'Upstream documentation' },
     ],
+    evidence: [
+      { evidence_url: 'https://github.com/vllm-project/vllm/releases/tag/v0.6.4', evidence_type: 'primary_source', source_reference: 'GitHub Release Tag v0.6.4', status: 'supported', confidence: 0.98 },
+    ],
+    analysis: {
+      summary: 'vLLM v0.6.4 delivers massive speculative decoding latency benefits.',
+      why_it_matters: 'Decreases inference cost and latency for LLM serving architectures.',
+      confidence: 0.95,
+    },
   },
   {
     _id: 'story-mock-002',
+    id: 'story-mock-002',
     title: 'CRITICAL: requests library SSRF via redirect following (CVE-2024-1234)',
     summary: 'A server-side request forgery vulnerability allows proxy-authorization header leakage on redirects.',
     source_domain: 'github.com',
+    source_url: 'https://osv.dev/vulnerability/GHSA-4412-pytorch',
     published_at: new Date(Date.now() - 7200000).toISOString(),
     room_key: 'security',
+    topics: ['security', 'cve'],
     trust_badge: 'primary',
+    badge: 'primary',
     confidence: 0.97,
     risk_flags: ['CVE', 'SSRF', 'HIGH'],
     impact: 'Any service using requests with proxy auth is potentially affected',
     install_command: 'pip install "requests>=2.31.0"',
+    install_commit: 'b2c3d4e5f6a17890abcdef1234567890abcdef12',
+    commit_sha: 'b2c3d4e5f6a17890abcdef1234567890abcdef12',
+    seeded: true,
     claims: [
       { text: 'Proxy-Authorization header leaks on 301 redirects', status: 'supported', evidence_note: 'CVE database entry' },
+    ],
+    evidence: [
+      { evidence_url: 'https://osv.dev', evidence_type: 'primary_source', source_reference: 'OSV API', status: 'supported', confidence: 0.99 },
     ],
   },
   {
     _id: 'story-mock-003',
-    title: 'Kubernetes 1.31 promotes sidecar containers to stable',
-    summary: 'Sidecar containers — native init containers that run for the full pod lifetime — are now GA.',
+    id: 'story-mock-003',
+    title: 'Kubernetes 1.32 promotes Gateway API to stable GA',
+    summary: 'Gateway API v1.2 HTTPRoute and GRPCRoute are now generally available natively.',
     source_domain: 'kubernetes.io',
+    source_url: 'https://kubernetes.io',
     published_at: new Date(Date.now() - 86400000).toISOString(),
     room_key: 'cloud',
+    topics: ['cloud', 'infrastructure'],
     trust_badge: 'vendor_reported',
+    badge: 'vendor_reported',
     confidence: 0.88,
     risk_flags: [],
-    install_command: 'kubectl version --short',
+    install_command: 'kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.0/standard-install.yaml',
+    install_commit: 'c3d4e5f6a1b27890abcdef1234567890abcdef12',
+    commit_sha: 'c3d4e5f6a1b27890abcdef1234567890abcdef12',
+    seeded: true,
     claims: [
-      { text: 'Sidecar containers promoted to stable', status: 'supported' },
+      { text: 'Gateway API v1.2 is generally available', status: 'supported', evidence_note: 'Kubernetes official blog' },
+    ],
+    evidence: [
+      { evidence_url: 'https://kubernetes.io/blog', evidence_type: 'primary_source', source_reference: 'Official Blog', status: 'supported', confidence: 0.95 },
     ],
   },
 ]
 
 const RADAR_ITEMS = [
-  { _id: 'radar-001', name: 'LangChain', room_key: 'aiml', ring: 'trial', description: 'LLM orchestration framework', votes: { adopt: 3, trial: 8, assess: 2, hold: 0 }, user_vote: null },
-  { _id: 'radar-002', name: 'Kubernetes Sidecars', room_key: 'cloud', ring: 'adopt', description: 'Native sidecar containers GA', votes: { adopt: 12, trial: 3, assess: 1, hold: 0 }, user_vote: null },
-  { _id: 'radar-003', name: 'OSV Scanner', room_key: 'security', ring: 'assess', description: 'Open source vulnerability scanner', votes: { adopt: 5, trial: 4, assess: 6, hold: 1 }, user_vote: null },
+  { _id: 'radar-001', name: 'vLLM', room_key: 'aiml', ring: 'adopt', description: 'High-throughput LLM inference engine', votes: { adopt: 18, trial: 2, assess: 1, hold: 0 }, user_vote: null },
+  { _id: 'radar-002', name: 'Kubernetes Gateway API', room_key: 'cloud', ring: 'adopt', description: 'Next-gen cloud native ingress', votes: { adopt: 12, trial: 3, assess: 1, hold: 0 }, user_vote: null },
+  { _id: 'radar-003', name: 'TruffleHog', room_key: 'security', ring: 'adopt', description: 'Zero-false-positive secret detection', votes: { adopt: 22, trial: 4, assess: 1, hold: 0 }, user_vote: null },
 ]
 
-let _radarItems: Array<{
-  _id: string; name: string; room_key: string; ring: string
-  description: string; votes: Record<string, number>; user_vote: string | null
-}> = RADAR_ITEMS.map(i => ({ ...i }))
+let _radarItems: any[] = RADAR_ITEMS.map(i => ({ ...i }))
+
+let _activities = [
+  { _id: 'act-1', id: 'act-1', agent: 'scout', room: 'aiml', action: 'candidate_discovery', message: 'Discovered 4 new candidate releases', created_at: new Date(Date.now() - 60000).toISOString() },
+  { _id: 'act-2', id: 'act-2', agent: 'analyst', room: 'aiml', action: 'claim_verification', message: 'Verified vLLM v0.6.4 speculative decoding claims', created_at: new Date(Date.now() - 30000).toISOString() },
+  { _id: 'act-3', id: 'act-3', agent: 'editor', room: 'aiml', action: 'digest_compilation', message: 'Compiled weekly AI/ML Intelligence digest', created_at: new Date(Date.now() - 10000).toISOString() },
+]
 
 // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -97,6 +134,44 @@ export const handlers = [
 
   // Stories
   http.get(`${BASE}/stories`, () => HttpResponse.json(STORIES)),
+  http.get(`${BASE}/stories/:id`, ({ params }) => {
+    const found = STORIES.find(s => s._id === params.id || s.id === params.id)
+    if (found) return HttpResponse.json(found)
+    return HttpResponse.json(STORIES[0])
+  }),
+  http.post(`${BASE}/stories/:id/feedback`, async ({ request }) => {
+    const body = await request.json()
+    return HttpResponse.json({ status: 'accepted', feedback: body })
+  }),
+  http.post(`${BASE}/stories/:id/repost`, async ({ request }) => {
+    const body = await request.json() as { room_key: string }
+    return HttpResponse.json({ status: 'reposted', room_key: body.room_key })
+  }),
+
+  // Agent API
+  http.get(`${BASE}/agent/activity`, ({ request }) => {
+    const url = new URL(request.url)
+    const room = url.searchParams.get('room')
+    if (room) {
+      return HttpResponse.json(_activities.filter(a => a.room === room))
+    }
+    return HttpResponse.json(_activities)
+  }),
+  http.post(`${BASE}/agent/activity`, async ({ request }) => {
+    const body = await request.json() as any
+    const newAct = {
+      _id: `act-${Date.now()}`,
+      id: `act-${Date.now()}`,
+      agent: body.agent,
+      room: body.room,
+      action: body.action,
+      message: body.message,
+      created_at: new Date().toISOString(),
+    }
+    _activities.unshift(newAct)
+    return HttpResponse.json(newAct, { status: 201 })
+  }),
+  http.get(`${BASE}/agent/candidates`, () => HttpResponse.json(STORIES)),
 
   // Radar
   http.get(`${BASE}/radar/items`, () => HttpResponse.json(_radarItems)),
@@ -113,57 +188,36 @@ export const handlers = [
     return HttpResponse.json(_radarItems.find(i => i._id === id))
   }),
 
-  // Impact scan
-  http.post(`${BASE}/impact/scan`, async ({ request }) => {
-    const body = await request.json() as { content: string }
-    await delay(800)
-    const items = body.content.includes('requests') ? [
-      { package: 'requests', status: 'affected', advisory_id: 'GHSA-j8r2-6x86-q33q',
-        severity: 'HIGH', summary: 'SSRF via proxy-authorization header leak',
-        fix: 'pip install "requests>=2.31.0"', source: 'sample' },
-    ] : []
-    return HttpResponse.json({
-      ecosystem: 'pypi', total: 3, affected: items.length,
-      possible: 0, clear: 3 - items.length, items, source: 'sample',
-    })
-  }),
-
   // Rooms
   http.get(`${BASE}/rooms`, () => HttpResponse.json([
-    { _id: 'room-aiml-001', key: 'aiml', name: 'AI/ML Intelligence', topics: ['aiml'],
-      approvers: ['alice_aiml'], chat_channel_id: 'channel-aiml' },
+    { _id: 'room-aiml-001', key: 'aiml', name: 'AI/ML Intelligence', topics: ['aiml', 'llm'],
+      approvers: ['alice_aiml', 'lead_reviewer'], chat_channel_id: 'channel-aiml', members: [{ user_id: 'user-001', role: 'admin' }] },
+    { _id: 'room-cloud-002', key: 'cloud', name: 'Cloud & Platform Eng', topics: ['cloud', 'devtools'],
+      approvers: ['bob_cloud', 'lead_reviewer'], chat_channel_id: 'channel-cloud', members: [{ user_id: 'user-002', role: 'admin' }] },
+    { _id: 'room-sec-003', key: 'security', name: 'Security & Supply Chain', topics: ['security', 'cve'],
+      approvers: ['lead_reviewer'], chat_channel_id: 'channel-security', members: [{ user_id: 'user-003', role: 'admin' }] },
   ])),
   http.get(`${BASE}/rooms/:key/state`, ({ params }) =>
     HttpResponse.json({ room_key: params.key, room_name: params.key, step: -1,
                         status: 'idle', agents: ['scout','analyst','editor'],
-                        approvers: ['alice_aiml'], chat_channel_id: '', digest: null, last_seq: 0 })
+                        approvers: ['alice_aiml', 'lead_reviewer'], chat_channel_id: '', digest: null, last_seq: 0 })
   ),
+  http.post(`${BASE}/rooms/:key/invites`, async ({ params, request }) => {
+    const body = await request.json() as any
+    return HttpResponse.json({ _id: `inv-${Date.now()}`, room_key: params.key, invitee_handle: body.invitee_handle, status: 'pending' }, { status: 201 })
+  }),
+  http.get(`${BASE}/invites`, () => HttpResponse.json([])),
 
   // Digests
   http.get(`${BASE}/digests`, () => HttpResponse.json([])),
 
   // Switch status
   http.get(`${BASE}/switch/status`, () =>
-    HttpResponse.json({ connected: false, is_mock: true })
+    HttpResponse.json({ mode: 'cli_agent_dispatch', message: 'agents call NewsOps via CLI; last agent activity at recently' })
   ),
 
   // Demo reset
   http.post(`${BASE}/demo/reset`, () =>
     HttpResponse.json({ reset: true, message: 'Mock reset.' })
-  ),
-
-  // Activity (SSE fallback)
-  http.get(`${BASE}/activity`, () =>
-    HttpResponse.json({ room_key: 'aiml', events: [], count: 0 })
-  ),
-
-  // Messages — no SSE in MSW, simulate via response
-  http.post(`${BASE}/rooms/:key/messages`, () =>
-    HttpResponse.json({ seq: 1, delivered: true, message: 'Mock delivered' }, { status: 201 })
-  ),
-
-  // Me project
-  http.put(`${BASE}/me/project`, () =>
-    HttpResponse.json({ saved: true })
   ),
 ]

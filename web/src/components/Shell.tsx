@@ -19,9 +19,12 @@ const ROOMS = [
 
 const NAV = [
   { href: '/',            label: 'Inbox' },
+  { href: '/activity',    label: 'Activity' },
+  { href: '/review',      label: 'Review' },
+  { href: '/tools',       label: 'Tools' },
+  { href: '/rooms',       label: 'Rooms' },
   { href: '/radar',       label: 'Tech Radar' },
   { href: '/dependencies',label: 'Dependencies' },
-  { href: '/review',      label: 'Review' },
 ]
 
 export default function Shell({ children }: { children: ReactNode }) {
@@ -58,9 +61,18 @@ export default function Shell({ children }: { children: ReactNode }) {
         </Link>
         <span style={{ color: 'var(--line)', fontSize: 18 }}>|</span>
 
-        {/* Ticker placeholder */}
-        <div style={{ flex: 1, overflow: 'hidden', color: 'var(--mute)', fontSize: 12 }}>
-          <span>Latest: AI models, cloud security, dependency updates…</span>
+        {/* Ticker / Seeded chip */}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            padding: '2px 8px', borderRadius: 9999, fontSize: 11,
+            background: 'rgba(245, 158, 11, 0.15)', color: '#d97706',
+            border: '1px solid rgba(245, 158, 11, 0.3)', fontWeight: 600,
+          }}>
+            seeded data
+          </span>
+          <span style={{ color: 'var(--mute)', fontSize: 12 }}>
+            AI models, cloud security, verified dependencies
+          </span>
         </div>
 
         {/* Persona switch */}
