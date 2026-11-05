@@ -10,9 +10,13 @@ export function MockProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_MOCK !== '1') return
-    import('./browser').then(({ worker }) =>
-      worker.start({ quiet: true } as Parameters<typeof worker.start>[0]).then(() => setReady(true))
-    )
+    import('./browser').then(({ worker }) => {
+      if (worker && typeof worker.start === 'function') {
+        worker.start({ quiet: true } as Parameters<typeof worker.start>[0]).then(() => setReady(true))
+      } else {
+        setReady(true)
+      }
+    })
   }, [])
 
   if (!ready) return null

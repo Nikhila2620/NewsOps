@@ -1,4 +1,9 @@
-import { setupWorker } from 'msw/browser'
 import { handlers } from './handlers'
 
-export const worker = setupWorker(...handlers)
+let worker: any = null
+if (typeof window !== 'undefined') {
+  const { setupWorker } = require('msw/browser')
+  worker = setupWorker(...handlers)
+}
+
+export { worker }
