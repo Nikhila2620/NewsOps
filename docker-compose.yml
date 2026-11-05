@@ -26,21 +26,20 @@ services:
       APP_ENV: dev
       API_HOST: 0.0.0.0
       API_PORT: 8000
-      AGENT_API_TOKEN: ${AGENT_API_TOKEN:-dev-agent-secret}
+      AGENT_API_TOKEN: ${AGENT_API_TOKEN:-dev-agent-secret-token-change-me}
       SESSION_SECRET: ${SESSION_SECRET:-dev-secret-key-change-in-production}
       SWITCH_BASE_URL: ${SWITCH_BASE_URL:-}
       SWITCH_POSTER_TOKEN: ${SWITCH_POSTER_TOKEN:-}
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-    working_dir: /app
 
   # ── NewsOps Next.js frontend ──────────────────────────────────────────────
   web:
     build:
       context: ./web
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: http://localhost:8000/api/v1
     restart: unless-stopped
     depends_on:
       - backend
