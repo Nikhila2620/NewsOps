@@ -173,7 +173,7 @@ export default function ReviewPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between',
                             alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--mute)', marginBottom: 4 }}>
+                  <div suppressHydrationWarning style={{ fontSize: 11, color: 'var(--mute)', marginBottom: 4 }}>
                     Digest v{digest.version} · {new Date(digest.created_at).toLocaleString()}
                   </div>
                   <span style={{
@@ -308,7 +308,7 @@ export default function ReviewPage() {
                         {a.decision}
                       </span>
                       {a.comment && <span style={{ color: 'var(--mute)' }}>{a.comment}</span>}
-                      <span style={{ marginLeft: 'auto', color: 'var(--mute)', fontSize: 11 }}>
+                      <span suppressHydrationWarning style={{ marginLeft: 'auto', color: 'var(--mute)', fontSize: 11 }}>
                         {new Date(a.at).toLocaleString()}
                       </span>
                     </div>

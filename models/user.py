@@ -41,6 +41,7 @@ class User(BaseModel):
     blocked_topics: List[str] = Field(default_factory=list, description="Blocked topic tags")
     experience: str = Field(default="mid", description="Experience level")
     priorities: List[str] = Field(default_factory=list, description="Priority focus tags")
+    approver_rooms: List[str] = Field(default_factory=list, description="Rooms where user has approval authority")
     digest_frequency: str = Field(default="daily", description="realtime, daily, or weekly")
     quiet_hours: str = Field(default="", description="Quiet hours window")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

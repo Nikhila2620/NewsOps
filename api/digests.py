@@ -4,14 +4,18 @@ NewsOps Revision 2 - Digests & Human Approval API Endpoints.
 Implements GET /digests, GET /digests/{id}, POST /digests/{id}/approve,
 POST /digests/{id}/reject, POST /digests/{id}/request-changes, POST /digests/{id}/publish.
 
-CRITICAL RULE:
-POST /digests/{id}/publish MUST return HTTP 403 unless the digest status is 'approved'.
+CRITICAL RULES:
+1. POST /digests/{id}/approve, /reject, /request-changes MUST verify that the user
+   is an authorized approver for the room (room.approvers or user.approver_rooms).
+   Returns HTTP 403 Forbidden if not authorized.
+2. POST /digests/{id}/publish MUST return HTTP 403 unless the digest status is 'approved'.
 """
 
 from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pydantic import BaseModel as _BaseModel
 
 from ..core.errors import NotFoundError, NewsOpsException
 from ..core.logging import logger
@@ -21,6 +25,33 @@ from ..models.user import User
 from .deps import get_current_user
 
 router = APIRouter(prefix="/digests", tags=["Digests"])
+
+
+async def _assert_can_approve(room_key: str, current_user: User, db: AsyncIOMotorDatabase) -> None:
+    """Verifies that current_user has approval rights for the specified room."""
+    room = await db.rooms.find_one({"key": room_key})
+    room_approvers = room.get("approvers", []) if room else []
+    
+    normalized_approvers = {a.lstrip("@").lower() for a in room_approvers}
+    user_handle = current_user.chat_handle.lstrip("@").lower()
+    user_approver_rooms = [r.lower() for r in getattr(current_user, "approver_rooms", [])]
+
+    is_authorized = (
+        user_handle in normalized_approvers
+        or current_user.id in room_approvers
+        or room_key.lower() in user_approver_rooms
+        or (user_handle == "lead_reviewer" and "lead_reviewer" in normalized_approvers)
+    )
+
+    if not is_authorized:
+        logger.warning(
+            f"Approval action blocked: user '{current_user.chat_handle}' is not authorized "
+            f"for room '#{room_key}'. Authorized approvers: {room_approvers}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User '{current_user.chat_handle}' is not authorized to approve digests for #{room_key}.",
+        )
 
 
 @router.get("", response_model=List[Digest], summary="List and filter digests")
@@ -63,6 +94,9 @@ async def approve_digest(
     if not doc:
         raise NotFoundError("Digest", id)
 
+    # Enforce approver permission
+    await _assert_can_approve(doc["room_key"], current_user, db)
+
     record = ApprovalRecord(
         reviewer=current_user.chat_handle or current_user.id,
         decision="approved",
@@ -95,6 +129,9 @@ async def reject_digest(
     if not doc:
         raise NotFoundError("Digest", id)
 
+    # Enforce approver permission
+    await _assert_can_approve(doc["room_key"], current_user, db)
+
     record = ApprovalRecord(
         reviewer=current_user.chat_handle or current_user.id,
         decision="rejected",
@@ -125,6 +162,9 @@ async def request_changes(
     doc = await db.digests.find_one({"_id": id})
     if not doc:
         raise NotFoundError("Digest", id)
+
+    # Enforce approver permission
+    await _assert_can_approve(doc["room_key"], current_user, db)
 
     record = ApprovalRecord(
         reviewer=current_user.chat_handle or current_user.id,
@@ -184,12 +224,6 @@ async def publish_digest(
     return Digest(**updated)
 
 
-# ---------------------------------------------------------------------------
-# PATCH /digests/{id}/items/{story_id} — keep or remove a flagged item
-# ---------------------------------------------------------------------------
-from pydantic import BaseModel as _BaseModel
-
-
 class ItemDecision(_BaseModel):
     included: bool  # True = keep, False = remove
 
@@ -209,6 +243,9 @@ async def patch_digest_item(
     doc = await db.digests.find_one({"_id": id})
     if not doc:
         raise NotFoundError("Digest", id)
+
+    # Reviewer must have room authorization
+    await _assert_can_approve(doc["room_key"], current_user, db)
 
     digest = Digest(**doc)
     matched = False

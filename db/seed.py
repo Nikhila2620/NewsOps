@@ -47,7 +47,7 @@ INITIAL_ROOMS = [
             "priorities": ["kubernetes", "terraform", "observability"],
             "blocked": [],
         },
-        "approvers": ["lead_reviewer", "bob_cloud", "@nikhila", "nikhila"],
+        "approvers": ["lead_reviewer", "sam_cloud", "bob_cloud", "@nikhila", "nikhila"],
         "members": [{"user_id": "user-002", "role": "admin"}],
         "chat_platform": "mattermost",
         "chat_channel_id": "channel-cloud",
@@ -66,7 +66,7 @@ INITIAL_ROOMS = [
             "priorities": ["cve", "advisories", "secrets", "supply_chain"],
             "blocked": [],
         },
-        "approvers": ["lead_reviewer", "@nikhila", "nikhila"],
+        "approvers": ["lead_reviewer", "alice_aiml", "@nikhila", "nikhila"],
         "members": [{"user_id": "user-003", "role": "admin"}],
         "chat_platform": "mattermost",
         "chat_channel_id": "channel-security",
@@ -85,8 +85,23 @@ INITIAL_USERS = [
         "blocked_topics": [],
         "experience": "senior",
         "priorities": ["agents", "rag"],
+        "approver_rooms": ["aiml", "security"],
         "digest_frequency": "daily",
         "quiet_hours": "22:00-08:00",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    },
+    {
+        "_id": "user-sam-001",
+        "display_name": "Sam Rivera",
+        "chat_handle": "sam_cloud",
+        "github_login": "sam-dev",
+        "topics": ["cloud", "infrastructure"],
+        "blocked_topics": [],
+        "experience": "senior",
+        "priorities": ["kubernetes", "terraform"],
+        "approver_rooms": ["cloud"],
+        "digest_frequency": "daily",
+        "quiet_hours": "",
         "created_at": datetime.now(timezone.utc).isoformat(),
     },
     {
@@ -570,6 +585,55 @@ INITIAL_RADAR = [
 ]
 
 
+
+INITIAL_DIGESTS = [
+    {
+        "_id": "digest-aiml-001",
+        "room_key": "aiml",
+        "version": 1,
+        "status": "review_required",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "seeded": True,
+        "items": [
+            {"story_id": "story-aiml-001", "position": 0, "editor_note": "Speculative decoding breakthrough in vLLM", "included": True},
+            {"story_id": "story-aiml-002", "position": 1, "editor_note": "Qwen 2.5 Coder benchmark verification", "included": True},
+            {"story_id": "story-aiml-003", "position": 2, "editor_note": "Ollama tool calling enhancement", "included": True},
+            {"story_id": "story-aiml-004", "position": 3, "editor_note": "FastAPI community signal on DSPy", "included": True},
+        ],
+        "approvals": [],
+    },
+    {
+        "_id": "digest-cloud-001",
+        "room_key": "cloud",
+        "version": 1,
+        "status": "review_required",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "seeded": True,
+        "items": [
+            {"story_id": "story-cloud-001", "position": 0, "editor_note": "Kubernetes 1.32 DRA in-place pod resizing", "included": True},
+            {"story_id": "story-cloud-002", "position": 1, "editor_note": "Terraform 1.10 ephemeral values for credentials", "included": True},
+            {"story_id": "story-cloud-003", "position": 2, "editor_note": "Cilium 1.16 BGP and BIG-TCP throughput", "included": True},
+            {"story_id": "story-cloud-004", "position": 3, "editor_note": "Vector pipeline buffer warning", "included": True},
+        ],
+        "approvals": [],
+    },
+    {
+        "_id": "digest-sec-001",
+        "room_key": "security",
+        "version": 1,
+        "status": "review_required",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "seeded": True,
+        "items": [
+            {"story_id": "story-sec-001", "position": 0, "editor_note": "CRITICAL: requests CVE-2024-35195 redirect header leak", "included": True},
+            {"story_id": "story-sec-002", "position": 1, "editor_note": "HIGH: PyYAML CVE-2024-5174 arbitrary code execution", "included": True},
+            {"story_id": "story-sec-003", "position": 2, "editor_note": "HIGH: Sigstore cosign offline certificate verification", "included": True},
+            {"story_id": "story-sec-004", "position": 3, "editor_note": "TruffleHog v3.88 zero-false-positive detector", "included": True},
+        ],
+        "approvals": [],
+    },
+]
+
 async def seed_initial_data(db: AsyncIOMotorDatabase) -> None:
     """Inserts initial seed records idempotently using upserts."""
     logger.info("Checking and seeding initial NewsOps data...")
@@ -594,5 +658,8 @@ async def seed_initial_data(db: AsyncIOMotorDatabase) -> None:
 
         for item in INITIAL_RADAR:
             await db.radar_items.update_one({"_id": item["_id"]}, {"$setOnInsert": item}, upsert=True)
+
+        for digest in INITIAL_DIGESTS:
+            await db.digests.update_one({"_id": digest["_id"]}, {"$set": digest}, upsert=True)
 
     logger.info("Seed data verification completed.")

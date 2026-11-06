@@ -106,7 +106,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </button>
 
         {/* Theme toggle */}
-        <button onClick={toggleTheme}
+        <button suppressHydrationWarning onClick={toggleTheme}
                 aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
                 style={{ background: 'none', border: 'none', cursor: 'pointer',
                          color: 'var(--ink)', fontSize: 16 }}>
@@ -182,7 +182,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </main>
 
         {/* ── Room panel (always visible ≥1180px, slide-over below) ── */}
-        <aside style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--line)' }}
+        <aside style={{ width: 300, flexShrink: 0, borderLeft: '1px solid var(--line)', height: 'calc(100vh - 52px)', position: 'sticky', top: 52, display: 'flex', flexDirection: 'column' }}
                className="room-panel-desktop">
           <RoomPanel roomKey={activeRoom} />
         </aside>

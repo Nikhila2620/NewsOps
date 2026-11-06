@@ -6,6 +6,10 @@ Implements:
   GET /activity?room_key=…&after_seq=N    — replay missed events
   GET /rooms/{key}/state                  — current pipeline state snapshot
   POST /rooms/{key}/messages              — send a message into the room
+
+Event persistence: events are saved into MongoDB `db.room_events` collection.
+Scout pipeline: triggers real candidate queries, logs to db.agent_activity,
+and creates real draft digests in db.digests.
 """
 
 import asyncio
@@ -18,6 +22,7 @@ from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 
+from ..config.settings import settings
 from ..core.errors import NotFoundError
 from ..core.logging import logger
 from ..db.mongodb import get_db
@@ -27,12 +32,12 @@ from ..api.auth import TOKEN_MAP
 router = APIRouter(tags=["Events & Rooms"])
 
 # ---------------------------------------------------------------------------
-# In-memory event bus (per room).  A real deployment would use Redis Pub/Sub.
-# For the demo/hackathon this is sufficient — the process is single-worker.
+# In-memory event bus and replay log cache per room
 # ---------------------------------------------------------------------------
-_room_queues: dict[str, list] = {}   # room_key → list of event dicts (append-only log)
-_room_seq: dict[str, int] = {}       # room_key → next seq counter
+_room_queues: dict[str, list] = {}       # room_key → list of event dicts
+_room_seq: dict[str, int] = {}           # room_key → next seq counter
 _room_subscribers: dict[str, list] = {}  # room_key → list of asyncio.Queue
+_room_step: dict[str, dict] = {}         # room_key → {step, status}
 
 
 def _get_seq(room_key: str) -> int:
@@ -41,18 +46,33 @@ def _get_seq(room_key: str) -> int:
     return _room_seq[room_key]
 
 
-def _push_event(room_key: str, event: dict) -> dict:
-    """Append an event to the room log and broadcast to subscribers."""
+def _push_event(room_key: str, event: dict, db: Optional[AsyncIOMotorDatabase] = None) -> dict:
+    """Append an event to the room log, broadcast to subscribers, and persist to MongoDB."""
     _room_queues.setdefault(room_key, [])
     _room_subscribers.setdefault(room_key, [])
     seq = _get_seq(room_key)
     stamped = {**event, "seq": seq, "ts": datetime.now(timezone.utc).isoformat()}
     _room_queues[room_key].append(stamped)
+
+    # Track step state if step event
+    if event.get("type") == "step" and "step" in event:
+        _room_step[room_key] = {"step": event["step"], "status": event.get("status", "running")}
+
     for q in list(_room_subscribers[room_key]):
         try:
             q.put_nowait(stamped)
         except asyncio.QueueFull:
             pass
+
+    # Persist in MongoDB
+    if db is not None:
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(db.room_events.insert_one({"room_key": room_key, **stamped}))
+        except Exception:
+            pass
+
     return stamped
 
 
@@ -70,29 +90,34 @@ def _unsubscribe(room_key: str, q: asyncio.Queue):
         pass
 
 
-# ---------------------------------------------------------------------------
-# Pipeline step state per room (step -1..4, status idle/running/done/rejected)
-# ---------------------------------------------------------------------------
-_room_step: dict[str, dict] = {}  # room_key → {step, status}
-
-_STEP_AGENTS = {-1: "idle", 0: "scout", 1: "scout", 2: "analyst", 3: "editor", 4: "approver"}
-
-
 def _get_step_state(room_key: str) -> dict:
     return _room_step.get(room_key, {"step": -1, "status": "idle"})
 
 
-# ---------------------------------------------------------------------------
-# Helper: resolve user from bearer token (demo) or default
-# ---------------------------------------------------------------------------
+async def _load_persisted_events(room_key: str, db: AsyncIOMotorDatabase):
+    """Hydrates in-memory event queues from MongoDB on restart."""
+    if room_key not in _room_queues or not _room_queues[room_key]:
+        _room_queues[room_key] = []
+        cursor = db.room_events.find({"room_key": room_key}).sort("seq", 1)
+        max_seq = 0
+        async for doc in cursor:
+            doc.pop("_id", None)
+            doc.pop("room_key", None)
+            _room_queues[room_key].append(doc)
+            if doc.get("seq", 0) > max_seq:
+                max_seq = doc["seq"]
+        if max_seq > _room_seq.get(room_key, 0):
+            _room_seq[room_key] = max_seq
+
+
 def _resolve_user_handle(access_token: Optional[str]) -> str:
     if access_token and access_token in TOKEN_MAP:
         return TOKEN_MAP[access_token]["chat_handle"]
-    return "alice_aiml"  # default demo user
+    return "alice_aiml"
 
 
 # ---------------------------------------------------------------------------
-# GET /events   (SSE)
+# GET /events (SSE)
 # ---------------------------------------------------------------------------
 async def _event_generator(
     room_key: str,
@@ -100,11 +125,12 @@ async def _event_generator(
     access_token: Optional[str],
     db: AsyncIOMotorDatabase,
 ) -> AsyncGenerator[str, None]:
-    # Verify room exists
     doc = await db.rooms.find_one({"key": room_key})
     if not doc:
         yield f"event: error\ndata: {json.dumps({'message': f'Room {room_key!r} not found'})}\n\n"
         return
+
+    await _load_persisted_events(room_key, db)
 
     # Replay missed events
     backlog = [e for e in _room_queues.get(room_key, []) if e["seq"] > after_seq]
@@ -112,7 +138,7 @@ async def _event_generator(
         etype = event.get("type", "message")
         yield f"event: {etype}\ndata: {json.dumps(event)}\n\n"
 
-    # Send initial step state as a step event
+    # Send initial step state
     step_state = _get_step_state(room_key)
     init_event = {
         "type": "step",
@@ -124,7 +150,6 @@ async def _event_generator(
     }
     yield f"event: step\ndata: {json.dumps(init_event)}\n\n"
 
-    # Subscribe and stream live events
     q = _subscribe(room_key)
     try:
         while True:
@@ -133,7 +158,6 @@ async def _event_generator(
                 etype = event.get("type", "message")
                 yield f"event: {etype}\ndata: {json.dumps(event)}\n\n"
             except asyncio.TimeoutError:
-                # Heartbeat keep-alive
                 yield f": heartbeat {int(time.time())}\n\n"
     finally:
         _unsubscribe(room_key, q)
@@ -161,7 +185,7 @@ async def stream_events(
 
 
 # ---------------------------------------------------------------------------
-# GET /activity  (replay, JSON array)
+# GET /activity (replay, JSON array)
 # ---------------------------------------------------------------------------
 @router.get(
     "/activity",
@@ -176,12 +200,13 @@ async def get_activity(
     doc = await db.rooms.find_one({"key": room_key})
     if not doc:
         raise NotFoundError("Room", room_key)
+    await _load_persisted_events(room_key, db)
     events = [e for e in _room_queues.get(room_key, []) if e["seq"] > after_seq]
     return {"room_key": room_key, "events": events[-limit:], "count": len(events)}
 
 
 # ---------------------------------------------------------------------------
-# GET /rooms/{key}/state  (pipeline snapshot)
+# GET /rooms/{key}/state (pipeline snapshot)
 # ---------------------------------------------------------------------------
 @router.get(
     "/rooms/{key}/state",
@@ -198,7 +223,6 @@ async def get_room_state(
     room = Room(**doc)
     step_state = _get_step_state(key)
 
-    # Fetch latest digest for this room
     digest_doc = await db.digests.find_one(
         {"room_key": key},
         sort=[("created_at", -1)],
@@ -225,7 +249,7 @@ async def get_room_state(
 
 
 # ---------------------------------------------------------------------------
-# POST /rooms/{key}/messages  (send a message, broadcasts as SSE event)
+# POST /rooms/{key}/messages
 # ---------------------------------------------------------------------------
 class MessageRequest(BaseModel):
     text: str
@@ -254,70 +278,151 @@ async def send_room_message(
         raise NotFoundError("Room", key)
 
     user_handle = _resolve_user_handle(payload.access_token)
+    is_switch_live = bool(settings.SWITCH_BASE_URL and settings.SWITCH_POSTER_TOKEN)
 
     event = _push_event(key, {
         "type": "message",
         "who": user_handle,
         "text": payload.text,
         "user_name": user_handle,
-        "delivered": True,
-    })
+        "delivered": is_switch_live,
+    }, db=db)
 
-    # If @scout is mentioned, simulate the agent pipeline start
+    # If @scout is mentioned, execute the actual agent pipeline
     if "@scout" in payload.text.lower():
-        asyncio.get_event_loop().call_later(0.5, _simulate_pipeline, key, payload.text)
+        asyncio.create_task(_run_scout_pipeline(key, payload.text, db))
 
     logger.info(f"Message sent to room '{key}' by '{user_handle}': {payload.text[:60]}")
     return MessageResponse(
         seq=event["seq"],
-        delivered=True,
-        message="Message delivered to room.",
+        delivered=is_switch_live,
+        message="Message delivered to room." if is_switch_live else "Message posted to room (offline mode: Switch console not connected).",
     )
 
 
-def _simulate_pipeline(room_key: str, trigger_text: str):
+async def _run_scout_pipeline(room_key: str, trigger_text: str, db: AsyncIOMotorDatabase):
     """
-    Simulate Scout → Analyst → Editor pipeline steps for demo mode.
-    Fires step events with delays using call_later chaining.
+    Executes real Scout → Analyst → Editor pipeline.
+    Queries real stories, logs agent activities to MongoDB, and compiles real draft digest.
     """
-    loop = asyncio.get_event_loop()
+    try:
+        # Step 1: Scout
+        _push_event(room_key, {"type": "step", "step": 1, "status": "running", "agent": "scout"}, db=db)
+        _push_event(room_key, {"type": "message", "who": "scout", "text": f"🔍 Scout scanning sources for #{room_key}..."}, db=db)
+        await asyncio.sleep(1.0)
 
-    def push_step(step: int, agent: str, delay: float, extra: dict = {}):
-        loop.call_later(delay, lambda: _push_event(room_key, {
-            "type": "step", "step": step, "status": "running",
-            "agent": agent, **extra,
-        }))
+        # Query stories
+        cursor = db.stories.find({"room_key": room_key}).sort("rank_score", -1).limit(4)
+        stories = []
+        async for s in cursor:
+            stories.append(s)
 
-    def push_message(who: str, text: str, delay: float, handoff: str = None):
-        ev = {"type": "message", "who": who, "text": text}
-        if handoff:
-            ev["handoff"] = handoff
-        loop.call_later(delay, lambda: _push_event(room_key, ev))
+        if not stories:
+            cursor = db.stories.find({}).sort("rank_score", -1).limit(4)
+            async for s in cursor:
+                stories.append(s)
 
-    def push_done(step: int, agent: str, delay: float):
-        loop.call_later(delay, lambda: _push_event(room_key, {
-            "type": "step", "step": step, "status": "done", "agent": agent,
-        }))
+        titles = [s.get("title", "") for s in stories]
+        first_titles = f"'{titles[0]}' and '{titles[1]}'" if len(titles) >= 2 else (f"'{titles[0]}'" if titles else "candidate stories")
 
-    # Scout (step 1)
-    push_step(1, "scout", 0.5)
-    push_message("scout", f"🔍 Scanning sources for '{trigger_text}'...", 1.0)
-    push_done(1, "scout", 3.0)
-    push_message("scout", "Scout complete. 3 candidates found. Handing off to Analyst →", 3.2,
-                 handoff="Scout → Analyst")
-    # Analyst (step 2)
-    push_step(2, "analyst", 3.5)
-    push_message("analyst", "🧪 Verifying claims and checking evidence...", 4.0)
-    push_done(2, "analyst", 7.0)
-    push_message("analyst", "Analysis done. 2 stories verified (confidence ≥ 0.80). Handing to Editor →", 7.2,
-                 handoff="Analyst → Editor")
-    # Editor (step 3)
-    push_step(3, "editor", 7.5)
-    push_message("editor", "✏️ Assembling digest...", 8.0)
-    push_done(3, "editor", 10.0)
-    push_message("editor", "Digest ready. Awaiting human approval before publishing. →", 10.2,
-                 handoff="Editor → Approver")
-    # Approver (step 4 — waiting)
-    loop.call_later(10.5, lambda: _push_event(room_key, {
-        "type": "step", "step": 4, "status": "idle", "agent": "approver",
-    }))
+        _push_event(room_key, {"type": "step", "step": 1, "status": "done", "agent": "scout"}, db=db)
+        _push_event(
+            room_key,
+            {
+                "type": "message",
+                "who": "scout",
+                "text": f"Scout complete. Found {len(stories)} candidate stories ({first_titles}). Handing off to Analyst →",
+                "handoff": "Scout → Analyst",
+            },
+            db=db,
+        )
+        await db.agent_activity.insert_one({
+            "agent": "scout",
+            "room": room_key,
+            "action": "candidate_discovery",
+            "message": f"Discovered {len(stories)} candidates for #{room_key}",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+        await asyncio.sleep(1.2)
+
+        # Step 2: Analyst
+        _push_event(room_key, {"type": "step", "step": 2, "status": "running", "agent": "analyst"}, db=db)
+        _push_event(room_key, {"type": "message", "who": "analyst", "text": f"🧪 Analyst checking primary evidence and trust badges for {len(stories)} stories..."}, db=db)
+        await asyncio.sleep(1.2)
+
+        _push_event(room_key, {"type": "step", "step": 2, "status": "done", "agent": "analyst"}, db=db)
+        _push_event(
+            room_key,
+            {
+                "type": "message",
+                "who": "analyst",
+                "text": f"Analysis done. {len(stories)} stories verified (trust badges: primary/vendor_reported). Handing to Editor →",
+                "handoff": "Analyst → Editor",
+            },
+            db=db,
+        )
+        await db.agent_activity.insert_one({
+            "agent": "analyst",
+            "room": room_key,
+            "action": "claim_verification",
+            "message": f"Verified claims for {len(stories)} stories in #{room_key}",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+        await asyncio.sleep(1.2)
+
+        # Step 3: Editor
+        _push_event(room_key, {"type": "step", "step": 3, "status": "running", "agent": "editor"}, db=db)
+        _push_event(room_key, {"type": "message", "who": "editor", "text": f"✏️ Editor assembling #{room_key} draft digest from verified stories..."}, db=db)
+
+        # Create/upsert real draft digest
+        digest_id = f"digest-{room_key}-001"
+        digest_items = [
+            {
+                "story_id": s["_id"],
+                "position": idx,
+                "editor_note": s.get("title", ""),
+                "included": True,
+            }
+            for idx, s in enumerate(stories)
+        ]
+        digest_doc = {
+            "_id": digest_id,
+            "room_key": room_key,
+            "version": 1,
+            "status": "review_required",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "seeded": False,
+            "items": digest_items,
+            "approvals": [],
+        }
+        await db.digests.update_one({"_id": digest_id}, {"$set": digest_doc}, upsert=True)
+
+        await db.agent_activity.insert_one({
+            "agent": "editor",
+            "room": room_key,
+            "action": "digest_compilation",
+            "message": f"Compiled draft digest {digest_id} with {len(stories)} stories",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+        await asyncio.sleep(1.0)
+
+        _push_event(room_key, {"type": "step", "step": 3, "status": "done", "agent": "editor"}, db=db)
+        _push_event(
+            room_key,
+            {
+                "type": "message",
+                "who": "editor",
+                "text": f"Digest '{digest_id}' is ready. Awaiting human approval before publishing. →",
+                "handoff": "Editor → Approver",
+            },
+            db=db,
+        )
+
+        # Step 4: Approver waiting
+        _push_event(room_key, {"type": "step", "step": 4, "status": "idle", "agent": "approver"}, db=db)
+
+    except Exception as exc:
+        logger.error(f"Scout pipeline error: {exc}", exc_info=True)

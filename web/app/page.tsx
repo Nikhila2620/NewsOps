@@ -89,7 +89,7 @@ function StoryCard({ story, isNew, onClick }: { story: Story; isNew: boolean; on
             NEW
           </span>
         )}
-        <span style={{ fontSize: 11, color: 'var(--mute)', marginLeft: 'auto' }}>
+        <span suppressHydrationWarning style={{ fontSize: 11, color: 'var(--mute)', marginLeft: 'auto' }}>
           {story.source_domain} · {new Date(story.published_at).toLocaleDateString()}
         </span>
       </div>
@@ -289,7 +289,7 @@ export default function InboxPage() {
       <div style={{ padding: '24px', maxWidth: 800 }}>
         {/* Greeting */}
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
+          <h1 suppressHydrationWarning style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
             Good{new Date().getHours() < 12 ? ' morning' : new Date().getHours() < 18 ? ' afternoon' : ' evening'}
           </h1>
           <p style={{ color: 'var(--mute)', fontSize: 14 }}>

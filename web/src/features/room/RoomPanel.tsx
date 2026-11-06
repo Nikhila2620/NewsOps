@@ -88,7 +88,7 @@ export default function RoomPanel({ roomKey, onClose, slideOver }: Props) {
   return (
     <div
       className={wrapClass}
-      style={{ background: 'var(--surface)', borderLeft: '1px solid var(--line)' }}
+      style={{ background: 'var(--surface)', borderLeft: '1px solid var(--line)', height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       {/* ── Header ── */}
       <div style={{ borderBottom: '1px solid var(--line)', padding: '12px 16px' }}

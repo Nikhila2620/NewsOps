@@ -118,7 +118,7 @@ export default function ActivityPage() {
                     <span style={{ fontSize: 12, color: 'var(--ink)', fontWeight: 600 }}>
                       {act.action}
                     </span>
-                    <span style={{ fontSize: 11, color: 'var(--mute)', marginLeft: 'auto' }}>
+                    <span suppressHydrationWarning style={{ fontSize: 11, color: 'var(--mute)', marginLeft: 'auto' }}>
                       {timeStr}
                     </span>
                   </div>
